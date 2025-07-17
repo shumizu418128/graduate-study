@@ -1,3 +1,5 @@
 CPUコア数: 4
 総メモリ: 32GB
 利用可能メモリ: 16GB
+
+kanto-latest.osm.pbfはでかすぎて保存できない
