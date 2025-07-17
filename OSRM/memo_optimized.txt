@@ -1,0 +1,60 @@
+# OSRM処理の効率化版
+# 並列処理とリソース最適化を適用
+
+## 1. 並列処理による高速化版
+# 複数のCPUコアを活用して処理を高速化
+# --threads オプションで並列度を指定（CPUコア数に応じて調整）
+
+# データ抽出（並列処理）
+docker run -t -v "D:\21EH_shimizu\graduate-study:/data" osrm/osrm-backend osrm-extract -p /opt/foot.lua --threads 8 /data/kanto-latest.osm.pbf
+
+# パーティション分割（並列処理）
+docker run -t -v "D:\21EH_shimizu\graduate-study:/data" osrm/osrm-backend osrm-partition --threads 8 /data/kanto-latest.osm.osrm
+
+# カスタマイズ（並列処理）
+docker run -t -v "D:\21EH_shimizu\graduate-study:/data" osrm/osrm-backend osrm-customize --threads 8 /data/kanto-latest.osrm
+
+## 2. メモリ最適化版
+# 大容量メモリを活用して処理速度を向上
+# --memory-limit オプションでメモリ使用量を制御
+
+# 高メモリ使用版（16GB以上推奨）
+docker run -t -v "D:\21EH_shimizu\graduate-study:/data" --memory=16g osrm/osrm-backend osrm-extract -p /opt/foot.lua --threads 8 /data/kanto-latest.osm.pbf
+docker run -t -v "D:\21EH_shimizu\graduate-study:/data" --memory=16g osrm/osrm-backend osrm-partition --threads 8 /data/kanto-latest.osrm
+docker run -t -v "D:\21EH_shimizu\graduate-study:/data" --memory=16g osrm/osrm-backend osrm-customize --threads 8 /data/kanto-latest.osrm
+
+## 3. バッチ処理スクリプト版
+# 一括実行で効率化
+
+# batch_process.bat または batch_process.sh として保存
+docker run -t -v "D:\21EH_shimizu\graduate-study:/data" --memory=16g osrm/osrm-backend bash -c "
+osrm-extract -p /opt/foot.lua --threads 8 /data/kanto-latest.osm.pbf &&
+osrm-partition --threads 8 /data/kanto-latest.osrm &&
+osrm-customize --threads 8 /data/kanto-latest.osrm
+"
+
+## 4. サーバー起動（最適化版）
+# 並列処理とメモリ最適化を適用したサーバー起動
+docker run -t -i -p 5000:5000 -v "D:\21EH_shimizu\graduate-study:/data" --memory=8g osrm/osrm-backend osrm-routed --algorithm mld --threads 8 /data/kanto-latest.osrm
+
+## 5. パフォーマンス監視版
+# 処理時間を計測しながら実行
+echo "開始時刻: $(date)" &&
+docker run -t -v "D:\21EH_shimizu\graduate-study:/data" --memory=16g osrm/osrm-backend bash -c "
+echo 'Extract開始: $(date)' &&
+osrm-extract -p /opt/foot.lua --threads 8 /data/kanto-latest.osm.pbf &&
+echo 'Extract完了: $(date)' &&
+echo 'Partition開始: $(date)' &&
+osrm-partition --threads 8 /data/kanto-latest.osrm &&
+echo 'Partition完了: $(date)' &&
+echo 'Customize開始: $(date)' &&
+osrm-customize --threads 8 /data/kanto-latest.osrm &&
+echo 'Customize完了: $(date)'
+" &&
+echo "終了時刻: $(date)"
+
+## 注意事項
+# - --threads の値はCPUコア数に応じて調整してください（通常4-16）
+# - --memory の値は利用可能なメモリに応じて調整してください
+# - SSD使用時は特に効果的です
+# - 初回実行時は時間がかかりますが、2回目以降は高速化されます
