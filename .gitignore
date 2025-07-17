@@ -1,0 +1,10 @@
+# .gitignore for Python and VS Code
+.vscode/
+__pycache__/
+*.pyc
+# C++ build and log files
+cpp_aggregation_server/logs/
+cpp_aggregation_server/build/
+# OS-specific files
+.DS_Store
+Thumbs.db

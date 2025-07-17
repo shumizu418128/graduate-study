@@ -1,0 +1,56 @@
+# ビルド成果物
+build/
+*.o
+*.a
+*.so
+*.dylib
+aggregation_server
+cmake_install.cmake
+CMakeCache.txt
+CMakeFiles/
+Makefile
+
+# エディタ・IDE関連
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Git関連
+.git/
+.gitignore
+
+# ログファイル
+*.log
+logs/
+
+# 一時ファイル
+*.tmp
+*.temp
+*.bak
+
+# Docker関連
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# ドキュメント（README.mdは必要に応じて含める可能性があるのでコメントアウト）
+# README.md
+
+# テスト関連
+test/
+tests/
+*.test
+
+# Python関連（もしあれば）
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.env
