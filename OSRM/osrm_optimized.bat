@@ -22,7 +22,7 @@ set /p process_choice="番号を入力してください (1/2): "
 if "%process_choice%"=="1" (
     echo.
     echo 1. データ抽出 開始...
-    docker run -t -v "D:\21EH_shimizu\graduate-study:/data" --memory=24g osrm/osrm-backend osrm-extract -p /opt/foot.lua --threads 4 /data/kanto-latest.osm.pbf
+    docker run -t -v "D:\21EH_shimizu\graduate-study\OSRM\data:/data" --memory=24g osrm/osrm-backend osrm-extract -p /opt/foot.lua --threads 4 /data/kanto-latest.osm.pbf
     if %errorlevel% neq 0 (
         echo エラー: データ抽出に失敗しました
         pause
@@ -31,7 +31,7 @@ if "%process_choice%"=="1" (
 
     echo.
     echo 2. パーティション分割 開始...
-    docker run -t -v "D:\21EH_shimizu\graduate-study:/data" --memory=24g osrm/osrm-backend osrm-partition --threads 4 /data/kanto-latest.osrm
+    docker run -t -v "D:\21EH_shimizu\graduate-study\OSRM\data:/data" --memory=24g osrm/osrm-backend osrm-partition --threads 4 /data/kanto-latest.osrm
     if %errorlevel% neq 0 (
         echo エラー: パーティション分割に失敗しました
         pause
@@ -40,7 +40,7 @@ if "%process_choice%"=="1" (
 
     echo.
     echo 3. カスタマイズ 開始...
-    docker run -t -v "D:\21EH_shimizu\graduate-study:/data" --memory=24g osrm/osrm-backend osrm-customize --threads 4 /data/kanto-latest.osrm
+    docker run -t -v "D:\21EH_shimizu\graduate-study\OSRM\data:/data" --memory=24g osrm/osrm-backend osrm-customize --threads 4 /data/kanto-latest.osrm
     if %errorlevel% neq 0 (
         echo エラー: カスタマイズに失敗しました
         pause
@@ -62,7 +62,7 @@ echo サーバーを起動しますか？ (y/n)
 set /p choice=
 if /i "%choice%"=="y" (
     echo サーバーを起動します...
-    docker run -t -i -p 5000:5000 -v "D:\21EH_shimizu\graduate-study:/data" --memory=8g osrm/osrm-backend osrm-routed --algorithm mld --threads %THREADS% /data/kanto-latest.osrm
+    docker run -t -i -p 5000:5000 -v "D:\21EH_shimizu\graduate-study\OSRM\data:/data" --memory=8g osrm/osrm-backend osrm-routed --algorithm mld --threads %THREADS% /data/kanto-latest.osrm
 )
 
 pause

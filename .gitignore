@@ -8,4 +8,4 @@ cpp_aggregation_server/build/
 # OS-specific files
 .DS_Store
 Thumbs.db
-OSRM/kanto-latest.osm.pbf
+OSRM/data/
