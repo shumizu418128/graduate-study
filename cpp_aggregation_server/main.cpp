@@ -460,7 +460,7 @@ int main() {
             json request_data = json::parse(req.body);
 
             vector<Point> points;
-            double radius = request_data.value("radius"); // 半径（メートル）ない場合は例外を投げる
+            double radius = request_data.at("radius"); // 半径（メートル）ない場合は例外を投げる
 
             // ポイントデータを抽出
             if (request_data.contains("points")) {
