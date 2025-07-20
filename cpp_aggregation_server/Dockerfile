@@ -6,7 +6,8 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=Asia/Tokyo
 
 # 必要なパッケージをインストール
-RUN apt-get update && apt-get install -y \
+RUN rm -rf /var/lib/apt/lists/* \
+    && apt-get update && apt-get install -y \
     build-essential \
     cmake \
     git \
