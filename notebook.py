@@ -37,11 +37,11 @@ def main():
     # --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 
     # 1. ワークスペースとなるジオデータベースのパス
-    gdb_path = r"C:\Users\東京電機大学\Documents\ArcGIS\Projects\0522_tokyo_shelter\0522_tokyo_shelter.gdb"
+    gdb_path = r"C:\Users\東京電機大学\Documents\ArcGIS\Projects\0925_osaka_shelter2\0925_osaka_shelter2.gdb"
 
     # 2. 入力フィーチャクラス名 (UTM座標系などを想定)
-    building_fc_name = "建築物_FeatureToPoint"
-    shelter_fc_name = "c13000_2_XYTableToPoint"
+    building_fc_name = "BldA"
+    shelter_fc_name = "osaka_shelter"
 
     # 3. 出力フィーチャクラス名 (新規作成されます)
     output_fc_name = "OSRM_Routes_Optimized"
