@@ -470,6 +470,8 @@ int main() {
                     double lat = point_data.value("lat", 0.0);
                     points.emplace_back(lon, lat, oid);
                 }
+            } else {
+                throw runtime_error("ポイントデータが存在しません");
             }
 
             // 集約処理を実行
