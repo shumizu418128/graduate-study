@@ -485,14 +485,37 @@ int main() {
 
             res.set_content(response.dump(), "application/json");
 
-        } catch (const exception& e) {
-            cerr << "エラー: " << e.what() << endl;
-
+        } catch (const nlohmann::json::exception& e) {
+            cerr << "[aggregate endpoint][JSON例外] " << e.what() << endl;
+            cerr << "  リクエストボディ: " << req.body << endl;
             json error_response = {
                 {"status", "error"},
-                {"message", e.what()}
+                {"type", "json_exception"},
+                {"message", e.what()},
+                {"request_body", req.body}
             };
-
+            res.status = 400;
+            res.set_content(error_response.dump(), "application/json");
+        } catch (const std::exception& e) {
+            cerr << "[aggregate endpoint][std::exception] " << e.what() << endl;
+            cerr << "  リクエストボディ: " << req.body << endl;
+            json error_response = {
+                {"status", "error"},
+                {"type", "std_exception"},
+                {"message", e.what()},
+                {"request_body", req.body}
+            };
+            res.status = 400;
+            res.set_content(error_response.dump(), "application/json");
+        } catch (...) {
+            cerr << "[aggregate endpoint][unknown exception]" << endl;
+            cerr << "  リクエストボディ: " << req.body << endl;
+            json error_response = {
+                {"status", "error"},
+                {"type", "unknown_exception"},
+                {"message", "unknown error"},
+                {"request_body", req.body}
+            };
             res.status = 400;
             res.set_content(error_response.dump(), "application/json");
         }
