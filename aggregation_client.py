@@ -28,17 +28,40 @@ def call_cpp_aggregation_server(points_dict: Dict[int, Dict[str, Any]],
 
     print(f"C++集約サーバーにリクエストを送信中... ({len(points_dict)} ポイント)")
 
-    # 高速化：mapとlambdaを使用した最適化されたデータ変換
-    # これは通常のリスト内包表記やforループよりも高速
-    points_list = list(map(
-        lambda p: {"lon": p["lon"], "lat": p["lat"], "oid": p["oid"]},
-        points_dict.values()
-    ))
+    # データの検証とフィルタリング
+    valid_points = []
+    invalid_count = 0
+
+    for p in points_dict.values():
+        # None値や無効な値をチェック
+        if (p.get("lon") is not None and p.get("lat") is not None and p.get("oid") is not None and
+            isinstance(p["lon"], (int, float)) and isinstance(p["lat"], (int, float)) and
+            isinstance(p["oid"], (int, float))):
+            valid_points.append({
+                "lon": float(p["lon"]),
+                "lat": float(p["lat"]),
+                "oid": int(p["oid"])
+            })
+        else:
+            invalid_count += 1
+            print(f"無効なポイントをスキップ: {p}")
+
+    if invalid_count > 0:
+        print(f"警告: {invalid_count} 個の無効なポイントをスキップしました")
+
+    print(f"有効なポイント数: {len(valid_points)}")
+    points_list = valid_points
 
     request_data = {
         "radius": radius_meters,
         "points": points_list
     }
+
+    # デバッグ: リクエストデータの一部を表示
+    print(f"リクエストデータ: radius={radius_meters}, points数={len(points_list)}")
+    if points_list:
+        print(f"最初のポイント例: {points_list[0]}")
+        print(f"最後のポイント例: {points_list[-1]}")
 
     try:
         # サーバーにリクエストを送信（json=パラメータを使用）
@@ -75,6 +98,13 @@ def call_cpp_aggregation_server(points_dict: Dict[int, Dict[str, Any]],
         raise
     except requests.exceptions.RequestException as e:
         print(f"集約サーバーとの通信エラー: {e}")
+        # レスポンスの内容があれば表示
+        if hasattr(e, 'response') and e.response is not None:
+            try:
+                error_content = e.response.text
+                print(f"サーバーエラーレスポンス: {error_content}")
+            except:
+                print("サーバーエラーレスポンスの読み取りに失敗")
         raise
 
 
