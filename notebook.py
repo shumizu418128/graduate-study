@@ -19,83 +19,6 @@ arcpy.CheckOutExtension("Spatial")
 print_lock = threading.Lock()
 
 
-def check_and_fix_coordinate_system(feature_class, current_sr, feature_type):
-    """座標系をチェックし、必要に応じて修正する関数
-
-    Args:
-        feature_class (str): フィーチャクラス名
-        current_sr: 現在のSpatialReferenceオブジェクト
-        feature_type (str): "建物" または "避難所"
-
-    Returns:
-        str: 修正後のフィーチャクラス名（修正されなかった場合は元の名前）
-    """
-    # 平面直角座標系のEPSGコード
-    jgd2011_plane_rectangular = {
-        6669: "I系（長崎）",
-        6670: "II系（福岡）",
-        6671: "III系（鹿児島）",
-        6672: "IV系（熊本）",
-        6673: "V系（四国）",
-        6674: "VI系（広島）",
-        6675: "VII系（山口）",
-        6676: "VIII系（京都）",
-        6677: "IX系（東京）",
-        6678: "X系（新潟）",
-        6679: "XI系（北海道）",
-        6680: "XII系（沖縄）",
-        6681: "XIII系（東京都小笠原諸島）"
-    }
-
-    current_epsg = current_sr.factoryCode
-    safe_print(f"{feature_type}フィーチャクラスの現在のEPSGコード: {current_epsg}")
-
-    # 東京地域のデータで、平面直角座標系が設定されている場合
-    if current_epsg in jgd2011_plane_rectangular:
-        current_zone = jgd2011_plane_rectangular[current_epsg]
-        safe_print(f"現在の設定: 平面直角座標系 {current_zone}")
-
-        # 東京地域のデータなのに東京系以外が設定されている可能性をチェック
-        # ここではIX系（東京、EPSG:6677）が正しいと仮定
-        correct_epsg = 6677  # 平面直角座標系 IX系（東京）
-
-        if current_epsg != correct_epsg:
-            safe_print(f"警告: {feature_type}データが東京地域のものと思われますが、")
-            safe_print(f"      座標系が {current_zone} として設定されています。")
-            safe_print("      正しい座標系は IX系（東京）である可能性があります。")
-            safe_print(f"{feature_type}フィーチャクラスの座標系を自動的に IX系（東京、EPSG:6677）に修正します。")
-
-            try:
-                # 正しい座標系を定義
-                correct_sr = arcpy.SpatialReference(correct_epsg)
-
-                # 新しいフィーチャクラス名
-                corrected_fc = f"{feature_class}_corrected"
-
-                # 座標系を修正したフィーチャクラスを作成
-                if arcpy.Exists(corrected_fc):
-                    arcpy.management.Delete(corrected_fc)
-
-                safe_print(f"{feature_type}フィーチャクラスの座標系を修正しています...")
-                arcpy.management.Project(feature_class, corrected_fc, correct_sr)
-
-                safe_print(f"{feature_type}フィーチャクラスの座標系修正が完了しました。")
-                safe_print(f"修正後のEPSGコード: {correct_epsg} (IX系 - 東京)")
-
-                return corrected_fc
-
-            except Exception as e:
-                safe_print(f"座標系修正中にエラーが発生しました: {e}")
-                safe_print("元のフィーチャクラスを使用します。")
-                return feature_class
-        else:
-            safe_print(f"{feature_type}フィーチャクラスの座標系は正しく設定されています: {current_zone}")
-            return feature_class
-    else:
-        safe_print(f"{feature_type}フィーチャクラスは平面直角座標系ではありません。（EPSG: {current_epsg}）")
-        return feature_class
-
-
 def safe_print(*args, **kwargs):
     """スレッドセーフなprint関数"""
     with print_lock:
@@ -145,12 +68,6 @@ def main():
         arcpy.env.overwriteOutput = True
         safe_print(f"ワークスペースを {gdb_path} に設定しました。")
 
-        # デバッグ: ワークスペース内のフィーチャクラス一覧を表示
-        safe_print("ワークスペース内のフィーチャクラス一覧:")
-        for fc in arcpy.ListFeatureClasses():
-            safe_print(f"  - {fc}")
-        safe_print("")
-
         # --- 2. 前処理: 座標変換 (WGS84へ) ---
         wgs84_sr = arcpy.SpatialReference(4326)
 
@@ -159,16 +76,6 @@ def main():
         building_sr = desc_building.spatialReference
         safe_print(f"建物フィーチャクラスの座標系: {building_sr.name} (タイプ: {building_sr.type})")
 
-        # --- 座標系チェックと修正 ---
-        safe_print(f"座標系修正前の建物フィーチャクラス名: {building_fc_name}")
-        building_fc_name = check_and_fix_coordinate_system(building_fc_name, building_sr, "建物")
-        safe_print(f"座標系修正後の建物フィーチャクラス名: {building_fc_name}")
-
-        # 修正後の座標系を再取得
-        desc_building = arcpy.Describe(building_fc_name)
-        building_sr = desc_building.spatialReference
-        safe_print(f"修正後の建物フィーチャクラスの座標系: {building_sr.name} (EPSG:{building_sr.factoryCode})")
-
         # 座標系に応じて処理を分岐
         if building_sr.factoryCode == 4326:  # 既にWGS84の場合
             safe_print(f"'{building_fc_name}' は既にWGS84座標系です。変換をスキップします。")
@@ -176,34 +83,16 @@ def main():
         else:
             # WGS84でない場合は変換を実行
             building_fc_wgs84 = f"{building_fc_name}_WGS84"
-            safe_print(f"WGS84変換後の建物フィーチャクラス名: {building_fc_wgs84}")
-
-            # 既存のWGS84フィーチャクラスを削除してから再作成
             if arcpy.Exists(building_fc_wgs84):
-                safe_print(f"'{building_fc_wgs84}' は既に存在します。削除して再作成します。")
-                try:
-                    arcpy.management.Delete(building_fc_wgs84)
-                    safe_print(f"'{building_fc_wgs84}' の削除が完了しました。")
-                except Exception as e:
-                    safe_print(f"'{building_fc_wgs84}' の削除に失敗しました: {e}")
-
-            safe_print(f"'{building_fc_name}' をWGS84に変換しています...")
-            arcpy.management.Project(building_fc_name, building_fc_wgs84, wgs84_sr)
+                safe_print(f"'{building_fc_wgs84}' は既に存在します。再利用します。")
+            else:
+                safe_print(f"'{building_fc_name}' をWGS84に変換しています...")
+                arcpy.management.Project(building_fc_name, building_fc_wgs84, wgs84_sr)
 
         # shelter_fc_name の座標系を取得
         desc_shelter = arcpy.Describe(shelter_fc_name)
         shelter_sr = desc_shelter.spatialReference
         safe_print(f"避難所フィーチャクラスの座標系: {shelter_sr.name} (タイプ: {shelter_sr.type})")
-
-        # --- 座標系チェックと修正 ---
-        safe_print(f"座標系修正前の避難所フィーチャクラス名: {shelter_fc_name}")
-        shelter_fc_name = check_and_fix_coordinate_system(shelter_fc_name, shelter_sr, "避難所")
-        safe_print(f"座標系修正後の避難所フィーチャクラス名: {shelter_fc_name}")
-
-        # 修正後の座標系を再取得
-        desc_shelter = arcpy.Describe(shelter_fc_name)
-        shelter_sr = desc_shelter.spatialReference
-        safe_print(f"修正後の避難所フィーチャクラスの座標系: {shelter_sr.name} (EPSG:{shelter_sr.factoryCode})")
 
         # 座標系に応じて処理を分岐
         if shelter_sr.factoryCode == 4326:  # 既にWGS84の場合
@@ -212,7 +101,6 @@ def main():
         else:
             # WGS84でない場合は変換を実行
             shelter_fc_wgs84 = f"{shelter_fc_name}_WGS84"
-            safe_print(f"WGS84変換後の避難所フィーチャクラス名: {shelter_fc_wgs84}")
             if arcpy.Exists(shelter_fc_wgs84):
                 safe_print(f"'{shelter_fc_wgs84}' は既に存在します。再利用します。")
             else:
@@ -222,14 +110,6 @@ def main():
 
         # --- 3. データ読み込み (WGS84座標) ---
         safe_print("建物ポイント(WGS84)をメモリに読み込んでいます...")
-
-        # デバッグ: WGS84フィーチャクラスの存在確認
-        safe_print(f"建物WGS84フィーチャクラス '{building_fc_wgs84}' の存在確認: {arcpy.Exists(building_fc_wgs84)}")
-        if arcpy.Exists(building_fc_wgs84):
-            desc_wgs84 = arcpy.Describe(building_fc_wgs84)
-            safe_print(f"フィーチャクラス情報: フィーチャ数 = {arcpy.management.GetCount(building_fc_wgs84)[0]}")
-            safe_print(f"座標系: {desc_wgs84.spatialReference.name} (EPSG:{desc_wgs84.spatialReference.factoryCode})")
-
         building_coords_wgs84 = get_coords_dict_from_fc(building_fc_wgs84)
 
         safe_print("避難所の座標をメモリに読み込んでいます...")
@@ -576,30 +456,21 @@ def get_coords_dict_from_fc(feature_class):
     coords_dict = {}
     chunk_size = 10000
 
-    safe_print(f"フィーチャクラス '{feature_class}' からデータを読み込んでいます...")
+    with arcpy.da.SearchCursor(feature_class, ["OID@", "SHAPE@XY"]) as cursor:
+        chunk = []
+        for row in cursor:
+            chunk.append(row)
+            if len(chunk) >= chunk_size:
+                # チャンクを処理
+                for oid, (lon, lat) in chunk:
+                    coords_dict[oid] = {'oid': oid, 'lon': lon, 'lat': lat}
+                chunk = []
 
-    try:
-        with arcpy.da.SearchCursor(feature_class, ["OID@", "SHAPE@XY"]) as cursor:
-            chunk = []
-            for row in cursor:
-                chunk.append(row)
-                if len(chunk) >= chunk_size:
-                    # チャンクを処理
-                    for oid, (lon, lat) in chunk:
-                        coords_dict[oid] = {'oid': oid, 'lon': lon, 'lat': lat}
-                    chunk = []
+        # 残りを処理
+        for oid, (lon, lat) in chunk:
+            coords_dict[oid] = {'oid': oid, 'lon': lon, 'lat': lat}
 
-            # 残りを処理
-            for oid, (lon, lat) in chunk:
-                coords_dict[oid] = {'oid': oid, 'lon': lon, 'lat': lat}
-
-        safe_print(f"フィーチャクラス '{feature_class}' から {len(coords_dict)} 件のデータを読み込みました。")
-        return coords_dict
-
-    except Exception as e:
-        safe_print(f"フィーチャクラス '{feature_class}' の読み込み中にエラーが発生しました: {e}")
-        safe_print(f"エラーの詳細: {arcpy.GetMessages(2)}")
-        raise
+    return coords_dict
 
 
 # MARK: ルート処理
