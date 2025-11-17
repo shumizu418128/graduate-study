@@ -37,11 +37,12 @@ def main():
     # --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 
     # 1. ワークスペースとなるジオデータベースのパス
-    gdb_path = r"C:\Users\東京電機大学\Documents\ArcGIS\Projects\0522_tokyo_shelter\0522_tokyo_shelter.gdb"
+    project_name = "0925_osaka_shelter2"
+    gdb_path = rf"C:\Users\東京電機大学\Documents\ArcGIS\Projects\{project_name}\{project_name}.gdb"
 
     # 2. 入力フィーチャクラス名 (UTM座標系などを想定)
-    building_fc_name = ""
-    shelter_fc_name = ""
+    building_fc_name = "Aggregated_Buildings_Clip"
+    shelter_fc_name = "osaka_shelter"
 
     # 3. 出力フィーチャクラス名 (新規作成されます)
     output_fc_name = "OSRM_Routes_Optimized"
@@ -633,4 +634,7 @@ if __name__ == '__main__':
     start_time = time.time()
     main()
     end_time = time.time()
-    safe_print(f"総処理時間: {(end_time - start_time) / 60:.2f} 分")
+    elapsed = end_time - start_time
+    minutes = int(elapsed // 60)
+    seconds = int(elapsed % 60)
+    safe_print(f"総処理時間: {minutes}分{seconds:02d}秒")
