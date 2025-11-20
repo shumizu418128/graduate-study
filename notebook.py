@@ -52,7 +52,7 @@ def main():
     osrm_url = "http://localhost:5000"
 
     # 5. 建物集約の半径 (メートル単位)
-    aggregation_radius_meters = 150
+    aggregation_radius_meters = 100
 
     # 6. 検索対象とする近傍の避難所数
     num_closest_shelters = 3
