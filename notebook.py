@@ -37,7 +37,8 @@ def main():
     # --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 
     # 1. ワークスペースとなるジオデータベースのパス
-    project_name = "1030_osaka_shelter2"
+    # 0925_osaka_shelter2 / 1030_tokyo_shelter2
+    project_name = "0925_osaka_shelter2"
     gdb_path = rf"C:\Users\東京電機大学\Documents\ArcGIS\Projects\{project_name}\{project_name}.gdb"
 
     # 2. 入力フィーチャクラス名 (UTM座標系などを想定)
