@@ -1,48 +1,40 @@
 graph TB
-    %% OSRM処理セクション (prefix: os_)
-    subgraph osrm ["OSRM処理"]
-        os_req[リクエスト]
-        os_req --> os_route_calc[ルーティング計算<br/>最短/最速探索]
-        os_route_calc --> os_time_dist[時間・距離集計]
-        os_route_calc --> os_geom[経路形状生成]
-        os_time_dist --> os_resp[レスポンス<br/>計算結果返却]
-        os_geom --> os_resp
-        os_resp --> os_dummy[ ]
+    subgraph "OSRM処理"
+        A[リクエスト]
+        A --> B[ルーティング計算<br/>最短/最速探索]
+        B --> C[時間・距離集計]
+        B --> D[経路形状生成]
+        C --> E[レスポンス<br/>計算結果返却]
+        D --> E
     end
 
-    %% メインワークフロー (prefix: wf_)
-    subgraph workflow ["メインワークフロー"]
-        wf_load_points[建物ポイント読込<br/>避難所ポイント読込]
-        wf_load_points --> wf_agg_api[集約API近傍避難所検索<br/>上位3件]
-        wf_agg_api --> wf_pair_processing[各建物-避難所ペア処理]
-        wf_pair_processing --> wf_table_api[OSRM Table API<br/>最寄避難所特定]
-        wf_table_api --> wf_route_api[OSRM Route API<br/>経路ジオメトリ取得]
-        wf_route_api --> wf_save_results[結果保存]
-        wf_save_results --> wf_create_points[集約ポイント作成]
-        wf_save_results --> wf_create_lines[ルートライン作成]
-        wf_create_points --> wf_geodb[ArcGIS<br/>Geodatabase]
-        wf_create_lines --> wf_geodb
+    subgraph "メインワークフロー"
+        F[建物ポイント読込<br/>避難所ポイント読込]
+
+        F --> G[集約API]
+
+        G --> H[近傍避難所検索<br/>上位3件]
+
+        H --> I[各建物-避難所ペア処理]
+
+        I --> J[OSRM Table API<br/>最寄避難所特定]
+        J --> K[OSRM Route API<br/>経路ジオメトリ取得]
+
+        K --> L[結果保存]
+        L --> M[集約ポイント作成]
+        L --> N[ルートライン作成]
+
+        M --> O[ArcGIS<br/>Geodatabase]
+        N --> O
     end
 
-    %% 集約処理 (prefix: agg_)
-    subgraph aggregation ["集約処理"]
-        agg_req[リクエスト]
-        agg_req --> agg_build_index[空間インデックス構築<br/>グリッドベース]
-        agg_build_index --> agg_group[グループ化処理<br/>半径内の点を集約]
-        agg_group --> agg_convex_centroid[凸包計算<br/>重心算出]
-        agg_convex_centroid --> agg_resp[レスポンス<br/>集約結果返却]
-        agg_resp --> agg_dummy[ ]
+    subgraph "集約処理"
+        P[リクエスト] --> Q[空間インデックス構築<br/>グリッドベース]
+        Q --> R[グループ化処理<br/>半径内の点を集約]
+        R --> S[凸包計算<br/>重心算出]
+        S --> T[レスポンス<br/>集約結果返却]
     end
 
-    %% API呼び出しの関連 (dashed)
-    wf_table_api -.->|API呼び出し| os_req
-    wf_route_api -.->|API呼び出し| os_req
-    wf_agg_api -.->|API呼び出し| agg_req
-
-    %% 高さ揃え用の不可視リンク
-    os_dummy ~~~ wf_geodb
-    agg_dummy ~~~ wf_geodb
-
-    %% ダミーノードを非表示化
-    style os_dummy fill:none,stroke:none
-    style agg_dummy fill:none,stroke:none
+    J -.->|API呼び出し| A
+    K -.->|API呼び出し| A
+    G -.->|API呼び出し| P
