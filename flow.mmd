@@ -1,0 +1,71 @@
+graph TB
+    subgraph "データ準備"
+        A[基盤地図情報<br/>OSMデータ] -->|OSMファイル| B[OSRM<br/>ルートエンジン]
+        A -->|建築物データ<br/>ZIP圧縮| C[open_zip.py<br/>解凍処理]
+        C -->|BldAファイル抽出| D[解凍済み建築物データ]
+    end
+
+    subgraph "OSRM処理"
+        B -->|osrm-extract| E[データ抽出]
+        E -->|osrm-partition| F[パーティション分割]
+        F -->|osrm-customize| G[カスタマイズ]
+        G --> H[OSRMサーバー起動<br/>localhost:5000]
+        H -->|ルート検索API| I[徒歩経路情報]
+    end
+
+    subgraph "メインワークフロー notebook.py"
+        D --> J[建物FC<br/>避難所FC]
+        J -->|ArcGIS Pro| K[座標変換<br/>→ WGS84]
+
+        K --> L[建物ポイント読込<br/>避難所ポイント読込]
+
+        L --> M{集約処理選択}
+        M -->|C++版| O[C++集約サーバー<br/>localhost:8080]
+
+        O --> P
+
+        P --> Q[KDTree<br/>近傍避難所検索<br/>上位3件]
+
+        Q --> R[並列バッチ処理<br/>ThreadPoolExecutor]
+
+        R --> S[各建物-避難所ペア処理]
+
+        S --> T[OSRM Table API<br/>最寄避難所特定]
+        T --> U[OSRM Route API<br/>経路ジオメトリ取得]
+
+        U --> V[結果保存]
+        V --> W[集約ポイントFC作成]
+        V --> X[ルートラインFC作成]
+
+        W --> Y[ArcGIS<br/>Geodatabase]
+        X --> Y
+    end
+
+    subgraph "C++集約サーバー"
+        O1[HTTP POSTリクエスト<br/>points + radius] --> O2[地理座標→<br/>デカルト座標変換]
+        O2 --> O3[空間インデックス構築<br/>グリッドベース]
+        O3 --> O4[グループ化処理<br/>半径内の点を集約]
+        O4 --> O5[凸包計算<br/>重心算出]
+        O5 --> O6[デカルト座標→<br/>地理座標変換]
+        O6 --> O7[JSON レスポンス<br/>集約結果返却]
+    end
+
+    subgraph "クライアント aggregation_client.py"
+        P1[建物座標辞書<br/>半径パラメータ] --> P2[データ検証<br/>無効値除外]
+        P2 --> P3[HTTP POSTリクエスト<br/>C++サーバーへ]
+        P3 --> P4[レスポンス受信<br/>JSON解析]
+        P4 --> P5[集約結果<br/>辞書形式で返却]
+    end
+
+    H -.->|API呼び出し| T
+    H -.->|API呼び出し| U
+    O -.->|HTTP通信| O1
+    P1 -.->|関数呼び出し| L
+
+    style A fill:#e1f5ff
+    style B fill:#e1f5ff
+    style H fill:#ffe1e1
+    style O fill:#ffe1e1
+    style Y fill:#e1ffe1
+    style W fill:#e1ffe1
+    style X fill:#e1ffe1
